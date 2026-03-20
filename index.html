@@ -368,14 +368,19 @@ function setRole(r) {
 async function createGame() {
   myName = document.getElementById('myName').value.trim();
   if(!myName){ showIntroErr('Please enter your name.'); return; }
-  const code = makeCode();
+
+  document.getElementById('btn-create').disabled = true;
+  document.getElementById('btn-create').textContent = 'Creating…';
+
+  const fullDeck = shuffle(STORY_CARDS);
+  // roomCode is PENDING — will be replaced with real bin ID after creation
   const state = {
-    roomCode: code,
+    roomCode: 'PENDING',
     names: { 1: myName, 2: '' },
     joined: { 1: true, 2: false },
     promptDeck: shuffle(PROMPTS),
-    storyDeck: shuffle(STORY_CARDS),
-    hands: { 1: dealN([], 7, shuffle(STORY_CARDS)), 2: [] },
+    storyDeck: fullDeck.slice(14),
+    hands: { 1: fullDeck.slice(0,7), 2: fullDeck.slice(7,14) },
     phase: 'waiting',
     currentPlayer: 1,
     currentPrompt: null,
@@ -383,27 +388,41 @@ async function createGame() {
     round: 1,
     discQuestion: randDisc(),
   };
-  // give both players separate hands from the same deck
-  const fullDeck = shuffle(STORY_CARDS);
-  state.hands[1] = fullDeck.slice(0,7);
-  state.hands[2] = fullDeck.slice(7,14);
-  state.storyDeck = fullDeck.slice(14);
-  currentRoomCode = code;
-  await saveState(state);
-  showWaiting(state, 'Waiting for your partner…', `Share this code with them:`, code);
-  startPolling();
+
+  try {
+    // Step 1: create the bin, get back its ID
+    const binId = await createBin(state);
+    // Step 2: set roomCode to the real bin ID and update
+    state.roomCode = binId;
+    currentRoomCode = binId;
+    await updateBin(binId, state);
+    // Step 3: show the bin ID as the game code
+    document.getElementById('waiting-code').textContent = binId;
+    showScreen('screen-waiting');
+    startPolling();
+  } catch(e) {
+    showIntroErr('Could not create game: ' + e.message);
+    document.getElementById('btn-create').disabled = false;
+    document.getElementById('btn-create').textContent = 'Create game & get code';
+  }
 }
 
 async function joinGame() {
   myName = document.getElementById('myName').value.trim();
-  const raw = document.getElementById('roomCode').value.trim().toUpperCase();
+  // Don't uppercase — bin IDs are case-sensitive
+  const raw = document.getElementById('roomCode').value.trim();
   if(!myName){ showIntroErr('Please enter your name.'); return; }
   if(!raw){ showIntroErr('Please enter the game code.'); return; }
   document.getElementById('btn-join').disabled = true;
   document.getElementById('btn-join').textContent = 'Joining…';
-  const state = await loadStateByCode(raw);
-  if(!state){ showIntroErr('Game not found. Double-check the code and try again.'); document.getElementById('btn-join').disabled=false; document.getElementById('btn-join').textContent='Join game'; return; }
+
+  let state;
+  try { state = await fetchBin(raw); } catch(e) { state = null; }
+
+  if(!state){ showIntroErr('Game not found. Make sure you pasted the full code from Player 1.'); document.getElementById('btn-join').disabled=false; document.getElementById('btn-join').textContent='Join game'; return; }
   if(state.joined && state.joined[2]){ showIntroErr('This game already has two players.'); document.getElementById('btn-join').disabled=false; document.getElementById('btn-join').textContent='Join game'; return; }
+
+  currentRoomCode = raw;
   state.names[2] = myName;
   state.joined[2] = true;
   state.phase = 'draw_prompt';
