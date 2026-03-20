@@ -216,7 +216,7 @@ html, body { height: 100%; background: var(--cream); color: var(--dark); font-fa
         </div>
         <div id="join-section" style="display:none;">
           <label>Game code (from Player 1)</label>
-          <input type="text" id="roomCode" placeholder="Paste the code from Player 1" style="font-size:13px;">
+          <input type="text" id="roomCode" placeholder="Paste the code from Player 1" maxlength="32" style="font-size:12px;letter-spacing:.02em;word-break:break-all;">>
           <button class="btn-begin" id="btn-join" onclick="joinGame()">Join game</button>
         </div>
       </div>
