@@ -216,7 +216,7 @@ html, body { height: 100%; background: var(--cream); color: var(--dark); font-fa
         </div>
         <div id="join-section" style="display:none;">
           <label>Game code (from Player 1)</label>
-          <input type="text" id="roomCode" placeholder="e.g. ROSE-7492" maxlength="12" style="text-transform:uppercase;">
+          <input type="text" id="roomCode" placeholder="Paste the code from Player 1" style="font-size:13px;">
           <button class="btn-begin" id="btn-join" onclick="joinGame()">Join game</button>
         </div>
       </div>
@@ -272,9 +272,6 @@ html, body { height: 100%; background: var(--cream); color: var(--dark); font-fa
 </div>
 
 <script>
-/* ══════════════════════════════════════════
-   DATA
-══════════════════════════════════════════ */
 const PROMPTS = [
   "My latest crush is…","I can't believe I got away with…","I would love to show _____ who I've become.","My favorite love story to tell…","My most irrational fear…","The worst date I've ever been on…","A text message I fantasize sending…","A dream I've never shared…","A risk I took that changed my life…","A time I felt very lost…","A risk I took that changed a relationship…","I owe an apology to…","When I notice myself getting older, I…","A person who doesn't know they've impacted my life is…","An experience that shaped who I am that few people know about…","The toughest conversation I've had with a friend…","The secret I've kept from my parents…","A time I felt rejected…","I wish I would have spoken up when…","I felt incredibly jealous when…","I need to let go of…","I spend too much time worrying about…","I would never forgive you if…","I was never the same after…","I wish everyone would forget about the time that I…","My experience with death has been…","I wish I could get closure on…","I'll never apologize for the time…","A time I admitted I was wrong…","The last time I felt free…","Lately I've been getting better at…","A text message I regret sending…","I think the concept of marriage is…","I'm the most stressed out about…","When I look at a photo of my younger self…","The hardest things to talk about in my family are…","Something I want but haven't asked for…","When I was young, I would spend hours daydreaming about…","If I could whisper something in the ear of my younger self, I would say…","My most tenacious vice…","One of the things that is keeping me up at night…","A fantasy of mine I'm conflicted about…","A rule I secretly love to break…","My inner critic loves to say…","I still feel like I need to impress…","Something I wrongfully took credit for…","A conversation I've been avoiding…","A conversation I wish I could have again…","A story I tell about myself that isn't entirely true…","I've been a poor friend to…","It's hard for me to say yes to…","If I could change something about the way I was raised, it would be…","I'm high-maintenance when it comes to…","I'm a control freak about…","I'm my own worst enemy when…","I'm proud I stood up for myself when…","My views about love changed when…","Something I believe but haven't said aloud…","A time when I felt on top of the world…","The best prank I've ever pulled off…","I owe a thank you to…","The last time I felt like an imposter…","My relationship to my body is…","Something I grew up thinking was normal but later found out wasn't…","Something I pretend to know more about than I actually do…","I've been faking…","Something my best friends know about me that no one else knows…","In my family, the power lies with…","The last time I made a fool of myself…","Something that hurt me but I didn't tell anyone…","The worst thing I've ever done to someone…","I feel most attractive when…","The last time I felt truly seen was…","A lie I've told more than once…","The moment I knew I was in love…","A time I chose myself over someone I loved…","Something I hope you never find out about me…",
 ];
@@ -285,102 +282,85 @@ const DISC = [
   "What made you choose that story?","How do you feel having shared that?","Is there something you left out?","What would you want me to understand about that moment?","Has anything changed since then?","What did you need at that time that you didn't get?","Would you make the same choice again?",
 ];
 
-function shuffle(a) {
-  const b=[...a];
-  for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}
-  return b;
-}
-function randDisc(){ return DISC[Math.floor(Math.random()*DISC.length)]; }
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function randDisc(){return DISC[Math.floor(Math.random()*DISC.length)];}
 
-/* ══════════════════════════════════════════
-   STORAGE — JSONBin.io
-   The bin ID *is* the game code. Player 1 creates
-   a bin, shares the ID. Player 2 fetches it directly.
-   No searching, no listing — just direct bin access.
-══════════════════════════════════════════ */
+/* ─── JSONBin storage ─── */
 const JBIN_KEY = '$2a$10$Pq5VoMSsX9sugfZfJx.2Tu8CfBJMn7gFP7MEt0Pf656xdGdYqeYAy';
 const JBIN = 'https://api.jsonbin.io/v3/b';
-const HDR  = { 'Content-Type': 'application/json', 'X-Master-Key': JBIN_KEY, 'X-Bin-Private': 'false', 'X-Bin-Versioning': 'false' };
+const JHDR = { 'Content-Type':'application/json', 'X-Master-Key': JBIN_KEY, 'X-Bin-Versioning':'false' };
 
-async function createBin(state){
-  const r = await fetch(JBIN, { method: 'POST', headers: HDR, body: JSON.stringify(state) });
-  if(!r.ok) throw new Error('create failed: ' + await r.text());
+async function createBin(state) {
+  const r = await fetch(JBIN, {
+    method: 'POST',
+    headers: { ...JHDR, 'X-Bin-Private':'false' },
+    body: JSON.stringify(state)
+  });
+  if (!r.ok) throw new Error(await r.text());
   const d = await r.json();
-  return d.metadata.id; // this IS the game code
+  return d.metadata.id;
 }
 
-async function updateBin(binId, state){
-  const r = await fetch(`${JBIN}/${binId}`, { method: 'PUT', headers: HDR, body: JSON.stringify(state) });
-  if(!r.ok) throw new Error('update failed: ' + await r.text());
+async function updateBin(binId, state) {
+  const r = await fetch(`${JBIN}/${binId}`, {
+    method: 'PUT',
+    headers: JHDR,
+    body: JSON.stringify(state)
+  });
+  if (!r.ok) throw new Error(await r.text());
 }
 
-async function fetchBin(binId){
-  const r = await fetch(`${JBIN}/${binId}/latest`, { headers: { 'X-Master-Key': JBIN_KEY } });
-  if(!r.ok) throw new Error('fetch failed: ' + r.status);
+async function fetchBin(binId) {
+  const r = await fetch(`${JBIN}/${binId}/latest`, {
+    headers: { 'X-Master-Key': JBIN_KEY }
+  });
+  if (!r.ok) throw new Error(r.status);
   const d = await r.json();
   return d.record;
 }
 
-async function saveState(state){
-  try { await updateBin(currentRoomCode, state); }
-  catch(e){ console.warn('save err', e); }
-}
-
-async function loadStateByCode(code){
-  try { return await fetchBin(code); }
-  catch(e){ console.warn('load err', e); return null; }
-}
-
-async function loadState(){
-  if(!currentRoomCode) return null;
-  return loadStateByCode(currentRoomCode);
-}
-
-/* ══════════════════════════════════════════
-   LOCAL SESSION
-══════════════════════════════════════════ */
-let myRole = 1; // 1 or 2
+/* ─── Session state ─── */
+let myRole = 1;
 let myName = '';
-let currentRoomCode = null;
+let currentBinId = null;  // the JSONBin ID — shared as game code
 let pollTimer = null;
 let lastStateStr = '';
 let selectedIdx = null;
 
+/* ─── UI helpers ─── */
+function show(id) {
+  ['screen-intro','screen-waiting','screen-game'].forEach(s => {
+    document.getElementById(s).classList.toggle('active', s === id);
+  });
+}
+function showIntroErr(msg) {
+  document.getElementById('intro-err').innerHTML = `<div class="err-box">${msg}</div>`;
+}
 function setRole(r) {
   myRole = r;
   document.getElementById('tab1').className = 'player-tab' + (r===1?' active':'');
   document.getElementById('tab2').className = 'player-tab' + (r===2?' active':'');
   document.getElementById('create-section').style.display = r===1 ? 'block':'none';
   document.getElementById('join-section').style.display = r===2 ? 'block':'none';
+  document.getElementById('intro-err').innerHTML = '';
 }
 
-/* ══════════════════════════════════════════
-   GAME STATE SHAPE
-  {
-    roomCode, names:{1,2}, joined:{1,2},
-    promptDeck, storyDeck, hands:{1,2},
-    phase: 'waiting'|'draw_prompt'|'pick_story'|'tell_story',
-    currentPlayer, currentPrompt, chosenStory,
-    round, discQuestion
-  }
-══════════════════════════════════════════ */
-
+/* ─── Create game ─── */
 async function createGame() {
   myName = document.getElementById('myName').value.trim();
-  if(!myName){ showIntroErr('Please enter your name.'); return; }
+  if (!myName) { showIntroErr('Please enter your name.'); return; }
 
-  document.getElementById('btn-create').disabled = true;
-  document.getElementById('btn-create').textContent = 'Creating…';
+  const btn = document.getElementById('btn-create');
+  btn.disabled = true; btn.textContent = 'Creating…';
 
   const fullDeck = shuffle(STORY_CARDS);
-  // roomCode is PENDING — will be replaced with real bin ID after creation
   const state = {
-    roomCode: 'PENDING',
-    names: { 1: myName, 2: '' },
-    joined: { 1: true, 2: false },
+    roomCode: null,
+    names: {1: myName, 2: ''},
+    joined: {1: true, 2: false},
     promptDeck: shuffle(PROMPTS),
     storyDeck: fullDeck.slice(14),
-    hands: { 1: fullDeck.slice(0,7), 2: fullDeck.slice(7,14) },
+    hands: {1: fullDeck.slice(0,7), 2: fullDeck.slice(7,14)},
     phase: 'waiting',
     currentPlayer: 1,
     currentPrompt: null,
@@ -390,94 +370,77 @@ async function createGame() {
   };
 
   try {
-    // Step 1: create the bin, get back its ID
     const binId = await createBin(state);
-    // Step 2: set roomCode to the real bin ID and update
     state.roomCode = binId;
-    currentRoomCode = binId;
+    currentBinId = binId;
     await updateBin(binId, state);
-    // Step 3: show the bin ID as the game code
     document.getElementById('waiting-code').textContent = binId;
-    showScreen('screen-waiting');
+    show('screen-waiting');
     startPolling();
   } catch(e) {
-    showIntroErr('Could not create game: ' + e.message);
-    document.getElementById('btn-create').disabled = false;
-    document.getElementById('btn-create').textContent = 'Create game & get code';
+    showIntroErr('Could not create game. Try again. (' + e.message + ')');
+    btn.disabled = false; btn.textContent = 'Create game & get code';
   }
 }
 
+/* ─── Join game ─── */
 async function joinGame() {
   myName = document.getElementById('myName').value.trim();
-  // Don't uppercase — bin IDs are case-sensitive
-  const raw = document.getElementById('roomCode').value.trim();
-  if(!myName){ showIntroErr('Please enter your name.'); return; }
-  if(!raw){ showIntroErr('Please enter the game code.'); return; }
-  document.getElementById('btn-join').disabled = true;
-  document.getElementById('btn-join').textContent = 'Joining…';
+  const binId = document.getElementById('roomCode').value.trim(); // case-sensitive, don't alter
+  if (!myName) { showIntroErr('Please enter your name.'); return; }
+  if (!binId) { showIntroErr('Please paste the game code.'); return; }
+
+  const btn = document.getElementById('btn-join');
+  btn.disabled = true; btn.textContent = 'Joining…';
 
   let state;
-  try { state = await fetchBin(raw); } catch(e) { state = null; }
+  try { state = await fetchBin(binId); } catch(e) { state = null; }
 
-  if(!state){ showIntroErr('Game not found. Make sure you pasted the full code from Player 1.'); document.getElementById('btn-join').disabled=false; document.getElementById('btn-join').textContent='Join game'; return; }
-  if(state.joined && state.joined[2]){ showIntroErr('This game already has two players.'); document.getElementById('btn-join').disabled=false; document.getElementById('btn-join').textContent='Join game'; return; }
+  if (!state) {
+    showIntroErr('Game not found. Make sure you pasted the full code exactly as sent.');
+    btn.disabled = false; btn.textContent = 'Join game'; return;
+  }
+  if (state.joined && state.joined[2]) {
+    showIntroErr('This game already has two players.');
+    btn.disabled = false; btn.textContent = 'Join game'; return;
+  }
 
-  currentRoomCode = raw;
+  currentBinId = binId;
   state.names[2] = myName;
   state.joined[2] = true;
   state.phase = 'draw_prompt';
-  await saveState(state);
+  await updateBin(binId, state);
   goGame(state);
   startPolling();
 }
 
-function makeCode() {
-  const words=['ROSE','MOON','FIRE','LAKE','SOUL','TIDE','DUSK','DAWN','MIST','LEAF'];
-  return words[Math.floor(Math.random()*words.length)]+'-'+Math.floor(1000+Math.random()*9000);
-}
-function dealN(hand, n, deck) {
-  const h=[...hand]; const d=[...deck];
-  while(h.length<n && d.length>0) h.push(d.pop());
-  return h;
+function copyCode() {
+  const code = document.getElementById('waiting-code').textContent;
+  navigator.clipboard.writeText(code).catch(()=>{});
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = 'Copied!';
+  setTimeout(()=>{ btn.textContent = 'Copy code'; }, 2000);
 }
 
-/* ══════════════════════════════════════════
-   POLLING
-══════════════════════════════════════════ */
+/* ─── Polling ─── */
 function startPolling() {
-  if(pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(async ()=>{
-    const state = await loadState();
-    if(!state) return;
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    if (!currentBinId) return;
+    let state;
+    try { state = await fetchBin(currentBinId); } catch(e) { return; }
     const str = JSON.stringify(state);
-    if(str === lastStateStr) return;
+    if (str === lastStateStr) return;
     lastStateStr = str;
-    // if we're on waiting screen and player2 joined
-    if(document.getElementById('screen-waiting').classList.contains('active')) {
-      if(state.joined[1] && state.joined[2]) { goGame(state); return; }
+    if (document.getElementById('screen-waiting').classList.contains('active')) {
+      if (state.joined[1] && state.joined[2]) { goGame(state); }
+      return;
     }
-    if(document.getElementById('screen-game').classList.contains('active')) {
-      selectedIdx = null; // reset on any external change
+    if (document.getElementById('screen-game').classList.contains('active')) {
+      selectedIdx = null;
       renderGame(state);
     }
-  }, 2000);
-}
-
-/* ══════════════════════════════════════════
-   SCREEN HELPERS
-══════════════════════════════════════════ */
-function show(id) {
-  ['screen-intro','screen-waiting','screen-game'].forEach(s=>{
-    document.getElementById(s).classList.toggle('active', s===id);
-  });
-}
-
-function showWaiting(state, title, sub, code) {
-  show('screen-waiting');
-  document.getElementById('waiting-for').textContent = 'your partner';
-  document.getElementById('waiting-sub').textContent = sub;
-  document.getElementById('waiting-code').textContent = code || '';
-  document.getElementById('waiting-hint').textContent = 'They choose "I\'m Player 2" and enter this code.';
+  }, 2500);
 }
 
 function goGame(state) {
@@ -487,31 +450,88 @@ function goGame(state) {
   renderGame(state);
 }
 
-function showIntroErr(msg) {
-  const el = document.getElementById('intro-err');
-  el.innerHTML = `<div class="err-box">${msg}</div>`;
+/* ─── Game actions ─── */
+async function actDrawPrompt() {
+  let state;
+  try { state = await fetchBin(currentBinId); } catch(e) { return; }
+  if (!state || state.currentPlayer !== myRole) return;
+  if (state.promptDeck.length === 0) state.promptDeck = shuffle(PROMPTS);
+  state.currentPrompt = state.promptDeck.pop();
+  state.phase = 'pick_story';
+  selectedIdx = null;
+  await updateBin(currentBinId, state);
+  renderGame(state);
 }
 
-/* ══════════════════════════════════════════
-   RENDER
-══════════════════════════════════════════ */
+function selectChip(i) {
+  selectedIdx = selectedIdx === i ? null : i;
+  fetchBin(currentBinId).then(s => { if(s) renderGame(s); });
+}
+
+async function actRevealStory() {
+  if (selectedIdx === null) return;
+  let state;
+  try { state = await fetchBin(currentBinId); } catch(e) { return; }
+  if (!state || state.currentPlayer !== myRole) return;
+  state.chosenStory = state.hands[myRole][selectedIdx];
+  state.phase = 'tell_story';
+  state.discQuestion = randDisc();
+  await updateBin(currentBinId, state);
+  renderGame(state);
+}
+
+async function actNextTurn() {
+  let state;
+  try { state = await fetchBin(currentBinId); } catch(e) { return; }
+  if (!state || state.currentPlayer !== myRole) return;
+  const hand = state.hands[myRole];
+  const used = state.chosenStory;
+  const idx = hand.indexOf(used);
+  if (idx > -1) hand.splice(idx, 1);
+  while (hand.length < 5 && state.storyDeck.length > 0) hand.push(state.storyDeck.pop());
+  state.currentPlayer = myRole === 1 ? 2 : 1;
+  if (state.currentPlayer === 1) state.round++;
+  state.phase = 'draw_prompt';
+  state.currentPrompt = null;
+  state.chosenStory = null;
+  selectedIdx = null;
+  await updateBin(currentBinId, state);
+  renderGame(state);
+}
+
+/* ─── Instructions toggles ─── */
+function toggleInstructions() {
+  const panel = document.getElementById('instr-panel');
+  const toggle = document.getElementById('instr-toggle');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+}
+function toggleGameInstructions() {
+  const drawer = document.getElementById('game-instr-drawer');
+  const btn = document.getElementById('game-instr-btn');
+  const isOpen = drawer.classList.contains('open');
+  drawer.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+}
+
+/* ─── Render ─── */
 function renderGame(state) {
   const p = state.currentPlayer;
   const isMyTurn = p === myRole;
-  const myN = state.names[myRole] || ('Player '+myRole);
-  const theirN = state.names[myRole===1?2:1] || ('Player '+(myRole===1?2:1));
+  const myN = state.names[myRole] || ('Player ' + myRole);
+  const theirRole = myRole === 1 ? 2 : 1;
+  const theirN = state.names[theirRole] || ('Player ' + theirRole);
   const hand = state.hands[myRole] || [];
 
-  // header
-  document.getElementById('turn-pill').textContent = isMyTurn ? 'Your turn' : theirN+"'s turn";
-  document.getElementById('turn-pill').className = 'turn-pill '+(isMyTurn?'yours':'theirs');
-  document.getElementById('round-info').textContent = 'Round '+state.round;
+  document.getElementById('turn-pill').textContent = isMyTurn ? 'Your turn' : theirN + "'s turn";
+  document.getElementById('turn-pill').className = 'turn-pill ' + (isMyTurn ? 'yours' : 'theirs');
+  document.getElementById('round-info').textContent = 'Round ' + state.round;
 
   const body = document.getElementById('game-body');
   let html = '';
 
-  if(!isMyTurn) {
-    // THEIR TURN — show waiting view
+  if (!isMyTurn) {
     const promptShown = state.phase !== 'draw_prompt';
     html = `
     <div class="cards-row fi">
@@ -519,18 +539,18 @@ function renderGame(state) {
         <span class="card-label">Prompt card</span>
         <div class="card card-dark">
           ${promptShown
-            ? `<span class="c-text">${state.currentPrompt||''}</span>`
+            ? `<span class="c-text">${state.currentPrompt || ''}</span>`
             : `<div><span class="c-brand">Where Should We Begin?</span><span class="c-hint">Waiting for ${theirN}</span></div>`}
         </div>
       </div>
       <div class="card-wrap">
         <span class="card-label">Story card</span>
         <div class="card card-light">
-          <div><span class="c-brand">Story card</span><span class="c-hint">${state.phase==='tell_story'?'Revealed below':'Choosing…'}</span></div>
+          <div><span class="c-brand">Story card</span><span class="c-hint">${state.phase === 'tell_story' ? 'Revealed below' : 'Choosing…'}</span></div>
         </div>
       </div>
     </div>
-    ${state.phase==='tell_story' && state.chosenStory ? `
+    ${state.phase === 'tell_story' && state.chosenStory ? `
     <div class="card card-story-out fi" style="min-height:90px;">
       <div><span class="c-prefix">Share something</span><span class="c-text">${state.chosenStory}</span></div>
     </div>
@@ -540,11 +560,10 @@ function renderGame(state) {
     </div>` : ''}
     <div class="their-turn-notice fi">
       <p>${theirN} is sharing their story…</p>
-      <small>This will update automatically</small>
+      <small>Updates automatically every few seconds</small>
     </div>`;
   } else {
-    // MY TURN
-    if(state.phase === 'draw_prompt') {
+    if (state.phase === 'draw_prompt') {
       html = `
       <div class="cards-row fi">
         <div class="card-wrap">
@@ -562,18 +581,15 @@ function renderGame(state) {
       </div>
       <div class="hand-section fi">
         <span class="card-label">${myN}'s hand — ${hand.length} cards</span>
-        <div class="hand-chips">${hand.map(c=>`<div class="chip">${c}</div>`).join('')}</div>
+        <div class="hand-chips">${hand.map(c => `<div class="chip">${c}</div>`).join('')}</div>
       </div>`;
     }
-
-    if(state.phase === 'pick_story') {
+    if (state.phase === 'pick_story') {
       html = `
       <div class="cards-row fi">
         <div class="card-wrap">
           <span class="card-label">Prompt card</span>
-          <div class="card card-dark">
-            <span class="c-text">${state.currentPrompt}</span>
-          </div>
+          <div class="card card-dark"><span class="c-text">${state.currentPrompt}</span></div>
         </div>
         <div class="card-wrap">
           <span class="card-label">Story card</span>
@@ -584,21 +600,18 @@ function renderGame(state) {
       </div>
       <div class="hand-section fi">
         <span class="card-label">${myN} — choose a story card</span>
-        <div class="hand-chips">${hand.map((c,i)=>`<div class="chip${selectedIdx===i?' sel':''}" onclick="selectChip(${i})">${c}</div>`).join('')}</div>
+        <div class="hand-chips">${hand.map((c,i) => `<div class="chip${selectedIdx===i?' sel':''}" onclick="selectChip(${i})">${c}</div>`).join('')}</div>
       </div>
       <div class="actions fi">
         <button class="btn btn-p" onclick="actRevealStory()" ${selectedIdx===null?'disabled':''}>Ready to share my story</button>
       </div>`;
     }
-
-    if(state.phase === 'tell_story') {
+    if (state.phase === 'tell_story') {
       html = `
       <div class="cards-row fi">
         <div class="card-wrap">
           <span class="card-label">Prompt card</span>
-          <div class="card card-dark">
-            <span class="c-text">${state.currentPrompt}</span>
-          </div>
+          <div class="card card-dark"><span class="c-text">${state.currentPrompt}</span></div>
         </div>
         <div class="card-wrap">
           <span class="card-label">Story card (revealed)</span>
@@ -612,85 +625,13 @@ function renderGame(state) {
         <p class="disc-item">${state.discQuestion}</p>
       </div>
       <div class="actions fi">
-        <button class="btn btn-p" onclick="actNextTurn()">Story shared — ${theirN}'s turn →</button>
+        <button class="btn btn-p" onclick="actNextTurn()">${theirN}'s turn →</button>
       </div>`;
     }
   }
-
   body.innerHTML = html;
 }
 
-/* ══════════════════════════════════════════
-   ACTIONS
-══════════════════════════════════════════ */
-async function actDrawPrompt() {
-  const state = await loadState();
-  if(!state || state.currentPlayer !== myRole) return;
-  if(state.promptDeck.length === 0) state.promptDeck = shuffle(PROMPTS);
-  state.currentPrompt = state.promptDeck.pop();
-  state.phase = 'pick_story';
-  selectedIdx = null;
-  await saveState(state);
-  renderGame(state);
-}
-
-function selectChip(i) {
-  selectedIdx = selectedIdx === i ? null : i;
-  // just re-render locally — no save needed yet
-  loadState().then(s => { if(s) renderGame(s); });
-}
-
-async function actRevealStory() {
-  if(selectedIdx === null) return;
-  const state = await loadState();
-  if(!state || state.currentPlayer !== myRole) return;
-  const hand = state.hands[myRole];
-  state.chosenStory = hand[selectedIdx];
-  state.phase = 'tell_story';
-  state.discQuestion = randDisc();
-  await saveState(state);
-  renderGame(state);
-}
-
-async function actNextTurn() {
-  const state = await loadState();
-  if(!state || state.currentPlayer !== myRole) return;
-  // remove used card
-  state.hands[myRole].splice(
-    state.hands[myRole].indexOf(state.chosenStory), 1
-  );
-  // refill hand if low
-  while(state.hands[myRole].length < 5 && state.storyDeck.length > 0) {
-    state.hands[myRole].push(state.storyDeck.pop());
-  }
-  // switch turn
-  state.currentPlayer = myRole === 1 ? 2 : 1;
-  if(state.currentPlayer === 1) state.round++;
-  state.phase = 'draw_prompt';
-  state.currentPrompt = null;
-  state.chosenStory = null;
-  selectedIdx = null;
-  await saveState(state);
-  renderGame(state);
-}
-
-function toggleGameInstructions() {
-  const drawer = document.getElementById('game-instr-drawer');
-  const btn = document.getElementById('game-instr-btn');
-  const isOpen = drawer.classList.contains('open');
-  drawer.classList.toggle('open', !isOpen);
-  btn.classList.toggle('open', !isOpen);
-}
-
-function toggleInstructions() {
-  const panel = document.getElementById('instr-panel');
-  const toggle = document.getElementById('instr-toggle');
-  const isOpen = panel.classList.contains('open');
-  panel.classList.toggle('open', !isOpen);
-  toggle.classList.toggle('open', !isOpen);
-}
-
-// init
 setRole(1);
 </script>
 </body>
